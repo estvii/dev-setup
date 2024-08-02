@@ -1,0 +1,70 @@
+---
+- name: Add a new GitHub account
+  hosts: localhost
+  connection: local
+  vars_prompt:
+    - name: "account_name"
+      prompt: "Enter the name for the new GitHub account aka user"
+      private: no
+    - name: "account_email"
+      prompt: "Enter the email for the new GitHub account"
+      private: no
+    - name: "host_name"
+      prompt: "Enter host name e.g. adc.github.trendmicro.com or dsgithub.trendmicro.com"
+      private: no
+    - name: "work_directory"
+      prompt: "Enter the directory where your work will be stored (e.g., /path/to/work)"
+      private: no
+    - name: "unique_identifier"
+      prompt: "Enter a unique identifier for this GitHub account (e.g., vision-one, cloud-one)"
+      private: no
+  tasks:
+    - name: Generate SSH key for the new account
+      ansible.builtin.command: ssh-keygen -f ~/.ssh/id_{{ unique_identifier }} -N ""
+      args:
+        creates: ~/.ssh/id_{{ unique_identifier }}
+
+    - name: Ensure .ssh directory exists
+      ansible.builtin.file:
+        path: ~/.ssh
+        state: directory
+        mode: '0700'
+
+    - name: Create SSH config file entry for the new account
+      ansible.builtin.lineinfile:
+        path: ~/.ssh/config
+        line: |
+          Host {{ host_name }}
+            HostName {{ host_name }}
+            User {{ account_name }}
+            IdentityFile ~/.ssh/id_{{ unique_identifier }}
+        create: yes
+        mode: '0600'
+
+    - name: Create Git configuration file for the new account
+      ansible.builtin.copy:
+        dest: ~/.gitconfig-{{ unique_identifier }}
+        content: |
+          [user]
+            name = {{ account_name }}
+            email = {{ account_email }}
+
+    - name: Update global Git configuration for conditional includes
+      ansible.builtin.blockinfile:
+        path: ~/.gitconfig
+        block: |
+          [includeIf "gitdir:{{ work_directory }}/"]
+            path = ~/.gitconfig-{{ unique_identifier }}
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - {{ unique_identifier }}"
+        create: yes
+        state: present
+
+    - name: Read the public SSH key
+      ansible.builtin.slurp:
+        src: ~/.ssh/id_{{ unique_identifier }}.pub
+      register: public_key
+
+    - name: Display the public SSH key
+      ansible.builtin.debug:
+        msg: "Public SSH key for {{ account_name }}:\n{{ public_key['content'] | b64decode }}"
+
