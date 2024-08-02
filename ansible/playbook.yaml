@@ -45,6 +45,37 @@
       community.general.homebrew:
         name: awscli
         state: present
+    - name: Ensure AWS credentials directory exists
+      file:
+        path: "{{ ansible_env.HOME }}/.aws"
+        state: directory
+        mode: '0700'
+    - name: Check if AWS credentials file exists
+      stat:
+        path: "{{ ansible_env.HOME }}/.aws/credentials"
+      register: credentials_file
+    - name: Check if AWS config file exists
+      stat:
+        path: "{{ ansible_env.HOME }}/.aws/config"
+      register: config_file
+    - name: Create AWS credentials file if it does not exist
+      copy:
+        dest: "{{ ansible_env.HOME }}/.aws/credentials"
+        content: |
+          [default]
+          aws_access_key_id = DUMMY_ACCESS_KEY_ID
+          aws_secret_access_key = DUMMY_SECRET_ACCESS_KEY
+        mode: '0600'
+      when: not credentials_file.stat.exists
+    - name: Create AWS config file if it does not exist
+      copy:
+        dest: "{{ ansible_env.HOME }}/.aws/config"
+        content: |
+          [default]
+          region = us-west-2
+          output = json
+        mode: '0600'
+      when: not config_file.stat.exists
     - name: Install Slack
       community.general.homebrew_cask:
         name: slack
@@ -93,3 +124,17 @@
         line: 'export PATH="$VOLTA_HOME/bin:$PATH"'
         create: yes
         state: present
+    # TODO should add install latest node version after volta installs
+
+    # This is work specific can be separated out possibly
+    # Both these depend on the aws cli setup step and volta setup step
+    # TODO maybe add script to ~/.zshrc to run aws-azure-login
+    - name: Install aws-azure-login using npm
+      npm:
+        name: aws-azure-login
+        global: yes
+        state: present
+    - name: Notify user to run aws-azure-login --configure
+      debug:
+        msg: |
+          Please run 'aws-azure-login --configure' to complete the setup.
