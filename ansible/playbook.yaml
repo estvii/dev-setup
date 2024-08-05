@@ -129,6 +129,51 @@
       community.general.homebrew:
         name: koekeishiya/formulae/yabai
         state: present
+    - name: Install skhd using Homebrew (keyboard shortcuts)
+      community.general.homebrew:
+        name: koekeishiya/formulae/skhd
+        state: present
+    - name: Create yabai config directory
+      file:
+        path: "{{ ansible_env.HOME }}/.config/yabai"
+        state: directory
+        mode: '0755'
+    - name: Check if yabai configuration file exists
+      stat:
+        path: "{{ ansible_env.HOME }}/.config/yabai/yabairc"
+      register: yabairc_file
+    - name: Create yabai configuration file if it does not exist
+      copy:
+        dest: "{{ ansible_env.HOME }}/.config/yabai/yabairc"
+        content: |
+          # Yabai configuration
+          yabai -m config layout bsp
+          yabai -m config window_gap 10
+          yabai -m config focus_follows_mouse autofocus
+          yabai -m config status_bar on
+          yabai -m config status_bar_text "yabai"
+        mode: '0755'
+      when: not yabairc_file.stat.exists
+
+    - name: Create skhd config directory
+      file:
+        path: "{{ ansible_env.HOME }}/.config/skhd"
+        state: directory
+        mode: '0755'
+    - name: Check if skhd configuration file exists
+      stat:
+        path: "{{ ansible_env.HOME }}/.config/skhd/skhdrc"
+      register: skhdrc_file
+    - name: Create skhd configuration file if it does not exist
+      copy:
+        dest: "{{ ansible_env.HOME }}/.config/skhd/skhdrc"
+        content: |
+          # SKHD configuration
+          # TODO add some keybindings
+        mode: '0755'
+      when: not skhdrc_file.stat.exists
+
+      # TODO Look into possibly adding hyper i.e. use caps instead of having to use options (alt) + shift etc
     - name: Set VOLTA_HOME environment variable in shell startup script # doing this because we're manually installing volta https://docs.volta.sh/guide/getting-started
       ansible.builtin.lineinfile:
         path: "{{ ansible_env.HOME }}/.zshrc"  # or ~/.bashrc or ~/.zshrc
