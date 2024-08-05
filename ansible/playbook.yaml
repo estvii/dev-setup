@@ -41,6 +41,15 @@
         sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
       args:
         creates: ~/.oh-my-zsh
+    - name: Install zsh autosuggestions
+      community.general.homebrew:
+        name: zsh-autosuggestions
+        state: present
+    - name: Activate the autosuggestions plugin
+      ansible.builtin.lineinfile:
+        path: "~/.zshrc"
+        line: 'source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh'
+        state: present
     - name:  Install aws-cli
       community.general.homebrew:
         name: awscli
@@ -112,6 +121,14 @@
       community.general.homebrew:
         name: volta
         state: present
+    - name: Tap koekeishiya/formulae # installs repo for yabai
+      community.general.homebrew_tap:
+        name: koekeishiya/formulae
+        state: present
+    - name: Install yabai using Homebrew (windows management)
+      community.general.homebrew:
+        name: koekeishiya/formulae/yabai
+        state: present
     - name: Set VOLTA_HOME environment variable in shell startup script # doing this because we're manually installing volta https://docs.volta.sh/guide/getting-started
       ansible.builtin.lineinfile:
         path: "{{ ansible_env.HOME }}/.zshrc"  # or ~/.bashrc or ~/.zshrc
@@ -124,16 +141,27 @@
         line: 'export PATH="$VOLTA_HOME/bin:$PATH"'
         create: yes
         state: present
-    # TODO should add install latest node version after volta installs
+    - name: Check if Node.js is installed
+      command: node --version
+      register: node_version
+      ignore_errors: true
+    - name: Use volta to install Node.js if it is not installed
+      command: volta install node
+      when: node_version.failed
 
     # This is work specific can be separated out possibly
     # Both these depend on the aws cli setup step and volta setup step
     # TODO maybe add script to ~/.zshrc to run aws-azure-login
+    - name: Check if aws-azure-login is installed
+      command: which aws-azure-login
+      register: aws_azure_login_version
+      ignore_errors: true
     - name: Install aws-azure-login using npm
       npm:
         name: aws-azure-login
         global: yes
         state: present
+      when: aws_azure_login_version.failed
     - name: Notify user to run aws-azure-login --configure
       debug:
         msg: |

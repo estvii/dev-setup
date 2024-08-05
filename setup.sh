@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Check for xcode-select, install if not found
+if ! command -v xcode-select &> /dev/null; then
+  echo "Xcode Command Line Tools not found. Installing..."
+  xcode-select --install
+else
+  echo "Xcode Command Line Tools are already installed."
+fi
+
 # Check for Homebrew, install if not found
 if ! command -v brew &> /dev/null; then
   echo "Homebrew not found. Installing Homebrew..."
