@@ -26,6 +26,7 @@
         - arjun.swagger-viewer
         - chakrounanas.turbo-console-log
         - orta.vscode-twoslash-queries
+        - ms-azuretools.vscode-docker
     - name: Install Zsh
       community.general.homebrew:
         name: zsh
@@ -49,6 +50,24 @@
       ansible.builtin.lineinfile:
         path: "~/.zshrc"
         line: 'source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh'
+        state: present
+    - name: Install zoxide
+      community.general.homebrew:
+        name: zoxide
+        state: present
+    - name: Setup zoxide in zsh
+      ansible.builtin.lineinfile:
+        path: "~/.zshrc"
+        line: 'eval "$(zoxide init --cmd cd zsh)"'
+        state: present
+    - name: Install fzf
+      community.general.homebrew:
+        name: fzf
+        state: present
+    - name: Setup zoxide in zsh
+      ansible.builtin.lineinfile:
+        path: "~/.zshrc"
+        line: 'source <(fzf --zsh)'
         state: present
     - name:  Install aws-cli
       community.general.homebrew:
@@ -112,6 +131,14 @@
     - name: Install Microsoft-teams
       community.general.homebrew_cask:
         name: microsoft-teams
+        state: present
+    - name: Install docker
+      community.general.homebrew_cask:
+        name: docker
+        state: present
+    - name: Install obsidian
+      community.general.homebrew_cask:
+        name: obsidian
         state: present
     - name: Install Display link
       community.general.homebrew_cask:
