@@ -112,6 +112,10 @@
       community.general.homebrew_cask:
         name: google-chrome
         state: present
+    - name: Install kap
+      community.general.homebrew_cask:
+        name: kap
+        state: present
     - name: Install 1password
       community.general.homebrew_cask:
         name: 1password
