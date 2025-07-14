@@ -64,10 +64,48 @@
       community.general.homebrew:
         name: fzf
         state: present
-    - name: Setup zoxide in zsh
+    - name: Setup fzf in zsh
       ansible.builtin.lineinfile:
         path: "~/.zshrc"
         line: 'source <(fzf --zsh)'
+        state: present
+    - name: Install yazi and optional dependencies
+      community.general.homebrew:
+        name:
+          - yazi
+          - ffmpeg # for video thumbnails
+          - sevenzip
+          - font-symbols-only-nerd-font
+          - fd
+          - ripgrep
+          # For more optional dependencies see https://yazi-rs.github.io/docs/installation
+        state: present
+    - name: Add yazi shell wrapper function to zsh config
+      notify: reload-zsh
+      ansible.builtin.blockinfile:
+        path: "{{ ansible_env.HOME }}/.zshrc"
+        block: |
+          # Yazi shell wrapper - allows changing directory when exiting yazi
+          function y() {
+            local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+            yazi "$@" --cwd-file="$tmp"
+            IFS= read -r -d '' cwd < "$tmp"
+            [ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
+            rm -f -- "$tmp"
+          }
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - Yazi wrapper"
+        state: present
+    - name:  Install cfn-lint
+      community.general.homebrew:
+        name: cfn-lint
+        state: present
+    - name:  Install oci-cli
+      community.general.homebrew:
+        name: oci-cli
+        state: present
+    - name:  Install terraform cli
+      community.general.homebrew:
+        name: terraform
         state: present
     - name:  Install aws-cli
       community.general.homebrew:
@@ -112,6 +150,10 @@
       community.general.homebrew_cask:
         name: google-chrome
         state: present
+    - name: Install firefox
+      community.general.homebrew_cask:
+        name: firefox
+        state: present
     - name: Install kap
       community.general.homebrew_cask:
         name: kap
@@ -127,6 +169,10 @@
     - name: Install Hyper terminal
       community.general.homebrew_cask:
         name: hyper
+        state: present
+    - name: Install ghostty
+      community.general.homebrew_cask:
+        name: ghostty
         state: present
     - name: Install AWS VPN Client
       community.general.homebrew_cask:
@@ -148,9 +194,37 @@
       community.general.homebrew_cask:
         name: displaylink
         state: present
+    - name: Install hyperkey
+      community.general.homebrew_cask:
+        name: hyperkey
+        state: present
+    - name: Install font-symbols-only-nerd-font for yazi
+      community.general.homebrew_cask:
+        name: font-symbols-only-nerd-font
+        state: present
     - name: Install Volta using Homebrew
       community.general.homebrew:
         name: volta
+        state: present
+    - name: Install raycast using Homebrew
+      community.general.homebrew:
+        name: raycast
+        state: present
+    - name: Install jq using Homebrew
+      community.general.homebrew:
+        name: jq
+        state: present
+    - name: Install rust using Homebrew
+      community.general.homebrew:
+        name: rust
+        state: present
+    - name: Install go using Homebrew
+      community.general.homebrew:
+        name: go
+        state: present
+    - name: Install ggshield
+      community.general.homebrew:
+        name: ggshield
         state: present
     - name: Tap koekeishiya/formulae # installs repo for yabai
       community.general.homebrew_tap:
@@ -242,3 +316,9 @@
       debug:
         msg: |
           Please run 'aws-azure-login --configure' to complete the setup.
+
+  handlers:
+    - name: reload-zsh
+      ansible.builtin.shell: source ~/.zshrc
+      args:
+        executable: /bin/zsh
