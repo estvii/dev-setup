@@ -11,22 +11,23 @@
       community.general.homebrew_cask:
         name: visual-studio-code
         state: present
-    - name: Install Visual Studio Code extensions
-      command: code --install-extension {{ item }}
-      loop:
-        - dbaeumer.vscode-eslint
-        - esbenp.prettier-vscode
-        - eamodio.gitlens
-        - streetsidesoftware.code-spell-checker
-        - editorconfig.editorconfig
-        - josa.ember-related-files
-        - github.copilot
-        - github.copilot-chat
-        - shd101wyy.markdown-preview-enhanced
-        - arjun.swagger-viewer
-        - chakrounanas.turbo-console-log
-        - orta.vscode-twoslash-queries
-        - ms-azuretools.vscode-docker
+    # - name: Install Visual Studio Code extensions
+    #   command: code --install-extension {{ item }}
+    #   loop:
+    #     - dbaeumer.vscode-eslint
+    #     - esbenp.prettier-vscode
+    #     - eamodio.gitlens
+    #     - streetsidesoftware.code-spell-checker
+    #     - editorconfig.editorconfig
+    #     - josa.ember-related-files
+    #     - github.copilot
+    #     - github.copilot-chat
+    #     - shd101wyy.markdown-preview-enhanced
+    #     - 42crunch.vscode-openapi
+    #     - chakrounanas.turbo-console-log
+    #     - orta.vscode-twoslash-queries
+    #     - ms-azuretools.vscode-docker
+    #     - biomejs.biome
     - name: Install Zsh
       community.general.homebrew:
         name: zsh
@@ -51,15 +52,19 @@
         path: "~/.zshrc"
         line: 'source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh'
         state: present
+    - name: Install uv (python)
+      community.general.homebrew:
+        name: uv
+        state: present
     - name: Install zoxide
       community.general.homebrew:
         name: zoxide
         state: present
-    - name: Setup zoxide in zsh
-      ansible.builtin.lineinfile:
-        path: "~/.zshrc"
-        line: 'eval "$(zoxide init --cmd cd zsh)"'
-        state: present
+    # - name: Setup zoxide in zsh # zoxide conflicts with claude code, as such an if block has been added, see claude code section
+    #   ansible.builtin.lineinfile:
+    #     path: "~/.zshrc"
+    #     line: 'eval "$(zoxide init --cmd cd zsh)"'
+    #     state: present
     - name: Install fzf
       community.general.homebrew:
         name: fzf
@@ -94,6 +99,14 @@
             rm -f -- "$tmp"
           }
         marker: "# {mark} ANSIBLE MANAGED BLOCK - Yazi wrapper"
+        state: present
+    - name:  Install github cli
+      community.general.homebrew:
+        name: gh
+        state: present
+    - name:  Install github action (local development)
+      community.general.homebrew:
+        name: act
         state: present
     - name:  Install cfn-lint
       community.general.homebrew:
@@ -313,6 +326,14 @@
     - name: Use volta to install Node.js if it is not installed
       command: volta install node
       when: node_version.failed
+    - name: Tap bun repository
+      community.general.homebrew_tap:
+        name: oven-sh/bun
+        state: present
+    - name: Install bun runtime
+      community.general.homebrew:
+        name: oven-sh/bun/bun
+        state: present
 
     # This is work specific can be separated out possibly
     # Both these depend on the aws cli setup step and volta setup step
@@ -331,7 +352,63 @@
       debug:
         msg: |
           Please run 'aws-azure-login --configure' to complete the setup.
+    
+    # Install Anthropic Claude Code CLI
+    - name: Check if claude-code is installed
+      command: which claude
+      register: claude_code_version
+      ignore_errors: true
+    - name: Install claude-code using homebrew
+      community.general.homebrew:
+        name: "claude-code"
+        state: present
+      when: claude_code_version.failed
+    - name: Check if claude configuration already exists
+      stat:
+        path: "{{ ansible_env.HOME }}/.claude/settings.json"
+      register: claude_config_file
+    - name: Configure claude-code global environment settings
+      command: |
+        claude config set --global env '{
+          "ANTHROPIC_BASE_URL": "https://api.rdsec.trendmicro.com/prod/aiendpoint/",
+          "ANTHROPIC_AUTH_TOKEN": "YOUR_TOKEN",
+          "ANTHROPIC_MODEL": "claude-4.6-sonnet",
+          "ANTHROPIC_SMALL_FAST_MODEL": "gemini-2.5-flash",
+          "DISABLE_NON_ESSENTIAL_MODEL_CALLS": 1,
+          "DISABLE_ZOXIDE": "1",
+          "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS":"1"
+        }'
+      when: not claude_config_file.stat.exists
+    - name: Notify user to run add auth token --configure
+      debug:
+        msg: |
+          Please add your auth token to ~/.claude/settings.json.
+    - name: Update zshrc to ignore zoxide to prevent conflicts with claude clade during bash https://github.com/anthropics/claude-code/issues/2632#issuecomment-3024225046
+      notify: reload-zsh
+      ansible.builtin.blockinfile:
+        path: "{{ ansible_env.HOME }}/.zshrc"
+        block: |
+          # Claude Code Zoxide Ignore
+          if [ -z "$DISABLE_ZOXIDE" ]; then
+              eval "$(zoxide init --cmd cd zsh)"
+          fi
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - Claude Code Zoxide Ignore"
+        state: present
+    # End Claude Code setup
 
+    # Install freeze cli tool for taking screenshots of cli output
+    - name: Tap charmbracelet
+      community.general.homebrew_tap:
+        name: charmbracelet/tap
+        state: present
+    - name: Install freeze
+      community.general.homebrew:
+        name: charmbracelet/tap/freeze
+        state: present
+    - name: Install ollama
+      community.general.homebrew:
+        name: ollama
+        state: present
   handlers:
     - name: reload-zsh
       ansible.builtin.shell: source ~/.zshrc

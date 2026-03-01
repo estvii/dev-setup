@@ -18,6 +18,8 @@
     - name: "unique_identifier"
       prompt: "Enter a unique identifier for this GitHub account (e.g., vision-one, cloud-one)"
       private: no
+  vars:
+    ssh_host: "{{ (host_name == 'github.com') | ternary('github.com-' + unique_identifier, host_name) }}"
   tasks:
     - name: Generate SSH key for the new account
       ansible.builtin.command: ssh-keygen -f ~/.ssh/id_{{ unique_identifier }} -N ""
@@ -34,9 +36,9 @@
       ansible.builtin.lineinfile:
         path: ~/.ssh/config
         line: |
-          Host {{ host_name }}
+          Host {{ ssh_host }}
             HostName {{ host_name }}
-            User {{ account_name }}
+            User git
             IdentityFile ~/.ssh/id_{{ unique_identifier }}
         create: yes
         mode: '0600'
@@ -48,6 +50,10 @@
           [user]
             name = {{ account_name }}
             email = {{ account_email }}
+          {% if host_name == 'github.com' %}
+          [url "git@{{ ssh_host }}:"]
+            insteadOf = git@github.com:
+          {% endif %}
 
     - name: Update global Git configuration for conditional includes
       ansible.builtin.blockinfile:
