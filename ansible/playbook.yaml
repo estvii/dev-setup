@@ -60,11 +60,11 @@
       community.general.homebrew:
         name: zoxide
         state: present
-    # - name: Setup zoxide in zsh # zoxide conflicts with claude code, as such an if block has been added, see claude code section
-    #   ansible.builtin.lineinfile:
-    #     path: "~/.zshrc"
-    #     line: 'eval "$(zoxide init --cmd cd zsh)"'
-    #     state: present
+    - name: Setup zoxide in zsh
+      ansible.builtin.lineinfile:
+        path: "~/.zshrc"
+        line: 'eval "$(zoxide init zsh)"'
+        state: present
     - name: Install fzf
       community.general.homebrew:
         name: fzf
@@ -375,7 +375,6 @@
           "ANTHROPIC_MODEL": "claude-4.6-sonnet",
           "ANTHROPIC_SMALL_FAST_MODEL": "gemini-2.5-flash",
           "DISABLE_NON_ESSENTIAL_MODEL_CALLS": 1,
-          "DISABLE_ZOXIDE": "1",
           "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS":"1"
         }'
       when: not claude_config_file.stat.exists
@@ -383,17 +382,11 @@
       debug:
         msg: |
           Please add your auth token to ~/.claude/settings.json.
-    - name: Update zshrc to ignore zoxide to prevent conflicts with claude clade during bash https://github.com/anthropics/claude-code/issues/2632#issuecomment-3024225046
-      notify: reload-zsh
+    - name: Remove old conditional zoxide block from zshrc (no longer needed)
       ansible.builtin.blockinfile:
         path: "{{ ansible_env.HOME }}/.zshrc"
-        block: |
-          # Claude Code Zoxide Ignore
-          if [ -z "$DISABLE_ZOXIDE" ]; then
-              eval "$(zoxide init --cmd cd zsh)"
-          fi
         marker: "# {mark} ANSIBLE MANAGED BLOCK - Claude Code Zoxide Ignore"
-        state: present
+        state: absent
     # End Claude Code setup
 
     # Install freeze cli tool for taking screenshots of cli output

@@ -58,7 +58,6 @@ This creates:
 
 ### Known quirks
 
-- **zoxide ↔ Claude Code conflict**: zoxide's `cd` override breaks Claude Code's bash tool. The playbook conditionally initializes zoxide only when `DISABLE_ZOXIDE` is not set. Claude Code is configured to set `DISABLE_ZOXIDE=1` in its global env. See: https://github.com/anthropics/claude-code/issues/2632
 - VSCode extension auto-install is commented out (manual install preferred; the commented list serves as a reference).
 - `aws-azure-login` is work-specific and depends on both the AWS CLI and Volta/Node being set up first.
 - After running the Claude Code setup task, you must manually add your auth token to `~/.claude/settings.json`.
