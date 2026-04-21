@@ -351,7 +351,7 @@
     - name: Notify user to run aws-azure-login --configure
       debug:
         msg: |
-          Please run 'aws-azure-login --configure' to complete the setup.
+          Please run 'aws-azure-login --configure' to complete the setup. To find tenantId and appId, visit portal azure > app registrations, and look for "SSO - AWS"
     
     # Install Anthropic Claude Code CLI
     - name: Check if claude-code is installed
