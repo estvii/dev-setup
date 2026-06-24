@@ -213,7 +213,7 @@
     - name: Install docker
       community.general.homebrew_cask:
         name: docker
-        state: present
+        state: absent
     - name: Install obsidian
       community.general.homebrew_cask:
         name: obsidian
@@ -226,9 +226,17 @@
       community.general.homebrew_cask:
         name: hyperkey
         state: present
+    - name: Install mactex (for resume latex. It is very large 5-6gb so only installing if needed)
+      community.general.homebrew_cask:
+        name: mactex
+        state: present
     - name: Install font-symbols-only-nerd-font for yazi
       community.general.homebrew_cask:
         name: font-symbols-only-nerd-font
+        state: present
+    - name: Install pandoc (for resume generation)
+      community.general.homebrew:
+        name: pandoc
         state: present
     - name: Install Volta using Homebrew
       community.general.homebrew:
