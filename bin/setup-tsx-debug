@@ -1,0 +1,53 @@
+#!/bin/zsh
+
+# Script to set up tsx debugging configuration for TypeScript projects
+# Usage: setup-tsx-debug [optional-path]
+
+# Use provided path or current directory
+TARGET_DIR="${1:-.}"
+
+# Check if we're in a TypeScript project
+if [[ ! -f "$TARGET_DIR/package.json" && ! -f "$TARGET_DIR/tsconfig.json" ]]; then
+    echo "❌ Not a TypeScript/Node.js project (no package.json or tsconfig.json found)"
+    echo "   Make sure you're in the right directory or provide the correct path"
+    exit 1
+fi
+
+# Create .vscode directory if it doesn't exist
+VSCODE_DIR="$TARGET_DIR/.vscode"
+mkdir -p "$VSCODE_DIR"
+
+# Create the launch.json file
+LAUNCH_FILE="$VSCODE_DIR/launch.json"
+
+cat > "$LAUNCH_FILE" << 'EOF'
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Debug Current File (tsx)",
+			"type": "node",
+			"request": "launch",
+			"program": "${file}",
+			"runtimeExecutable": "tsx",
+			"console": "integratedTerminal",
+			"skipFiles": ["<node_internals>/**"]
+		}
+	]
+}
+EOF
+
+echo "✅ VS Code tsx debug configuration created!"
+echo "📁 Location: $LAUNCH_FILE"
+echo ""
+echo "🚀 Usage:"
+echo "   1. Open any TypeScript file in VS Code"
+echo "   2. Press F5 to debug"
+echo "   3. Make sure you have tsx installed globally: npm install -g tsx"
+
+# Check if tsx is installed
+if ! command -v tsx &> /dev/null; then
+    echo ""
+    echo "⚠️  tsx not found globally. Install it with:"
+    echo "   npm install -g tsx"
+fi

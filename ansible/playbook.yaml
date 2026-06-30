@@ -28,6 +28,28 @@
     #     - orta.vscode-twoslash-queries
     #     - ms-azuretools.vscode-docker
     #     - biomejs.biome
+    - name: Ensure ~/bin directory exists
+      file:
+        path: "{{ ansible_env.HOME }}/bin"
+        state: directory
+        mode: '0755'
+    - name: Install personal bin scripts
+      copy:
+        src: "{{ playbook_dir }}/../bin/"
+        dest: "{{ ansible_env.HOME }}/bin/"
+        mode: '0755'
+    - name: Add ~/bin to PATH in zshrc
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/.zshrc"
+        line: 'export PATH="$HOME/bin:$PATH"'
+        create: yes
+        state: present
+    - name: Add setup-tsx-debug alias in zshrc
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/.zshrc"
+        line: 'alias setup-tsx-debug="~/bin/setup-tsx-debug"'
+        create: yes
+        state: present
     - name: Install Zsh
       community.general.homebrew:
         name: zsh
